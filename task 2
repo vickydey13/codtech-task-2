@@ -1,0 +1,90 @@
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+public class BlockchainSecurityAudit {
+
+    // Function to check for reentrancy vulnerabilities in smart contracts
+    public static boolean checkReentrancy(String contractCode) {
+        // Simple check: Look for patterns that may indicate reentrancy (e.g., external call within another function)
+        Pattern pattern = Pattern.compile("call.*external.*function", Pattern.DOTALL);
+        Matcher matcher = pattern.matcher(contractCode);
+        return matcher.find();
+    }
+
+    // Function to check network connectivity
+    public static void checkNetworkConnectivity(String urlString) {
+        try {
+            URL url = new URL(urlString);
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            connection.setRequestMethod("HEAD"); // Check if URL is reachable without downloading the body
+            int responseCode = connection.getResponseCode();
+
+            if (responseCode == HttpURLConnection.HTTP_OK) {
+                System.out.println("[Network Check] Successfully reached " + urlString);
+            } else {
+                System.err.println("[Network Check] Failed to reach " + urlString + ": Response code " + responseCode);
+            }
+        } catch (IOException e) {
+            System.err.println("[Network Check] Error reaching " + urlString + ": " + e.getMessage());
+        }
+    }
+
+    // Function to evaluate the consensus mechanism
+    public static void checkConsensusStrength(int totalNodes, int faultyNodes) {
+        if (faultyNodes > totalNodes / 3) {
+            System.out.println("[Consensus Mechanism] Potential risk: More than one-third of nodes are faulty.");
+        } else {
+            System.out.println("[Consensus Mechanism] Consensus mechanism appears robust.");
+        }
+    }
+
+    // Function to read a smart contract file
+    public static String readContractFile(String filePath) throws IOException {
+        StringBuilder contractCode = new StringBuilder();
+        try (BufferedReader br = new BufferedReader(new FileReader(filePath))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                contractCode.append(line).append("\n");
+            }
+        }
+        return contractCode.toString();
+    }
+
+    public static void main(String[] args) {
+        if (args.length < 3) {
+            System.out.println("Usage: java BlockchainSecurityAudit <contractFilePath> <networkUrl> <totalNodes> <faultyNodes>");
+            System.exit(1);
+        }
+
+        String contractFilePath = args[0];
+        String networkUrl = args[1];
+        int totalNodes = Integer.parseInt(args[2]);
+        int faultyNodes = Integer.parseInt(args[3]);
+
+        try {
+            // Read the smart contract
+            String contractCode = readContractFile(contractFilePath);
+
+            // Analyze smart contract
+            if (checkReentrancy(contractCode)) {
+                System.out.println("[Smart Contract] Potential reentrancy vulnerability detected.");
+            } else {
+                System.out.println("[Smart Contract] No obvious reentrancy issues detected.");
+            }
+
+            // Check network connectivity
+            checkNetworkConnectivity(networkUrl);
+
+            // Check consensus mechanism strength
+            checkConsensusStrength(totalNodes, faultyNodes);
+
+        } catch (IOException e) {
+            System.err.println("Error reading contract file: " + e.getMessage());
+        }
+    }
+}
